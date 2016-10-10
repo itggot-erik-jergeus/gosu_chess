@@ -33,10 +33,10 @@ class GameWindow < Gosu::Window
 
   def update
     if Gosu::button_down?(Gosu::MsLeft) then
-      p "#{(mouse_x/60).to_i-1},#{(mouse_y/60).to_i-1}"
+      p "#{(mouse_x/60).to_i},#{(mouse_y/60).to_i-1}"
       if @selected == nil
         @pieces.each do |piece|
-          if (mouse_x/60).to_i-1 == piece.x_value && (mouse_y/60).to_i-1 == piece.y_value
+          if (mouse_x/60).to_i == piece.x_value && (mouse_y/60).to_i-1 == piece.y_value
             @selected = piece
             @highlight = []
             @selected.moves.each do |move|
@@ -51,7 +51,7 @@ class GameWindow < Gosu::Window
         end
       else
         @pieces.each do |piece|
-          if (mouse_x/60).to_i-1 == piece.x_value && (mouse_y/60).to_i-1 == piece.y_value
+          if (mouse_x/60).to_i == piece.x_value && (mouse_y/60).to_i-1 == piece.y_value
 
           end
         end
@@ -80,13 +80,11 @@ class GameWindow < Gosu::Window
     for piece in @pieces
       piece.draw
     end
-    if @highlight
-      for highlight in @highlight
-        if highlight[2] == 0
-          @square_blue.draw((highlight[0]+1)*60,highlight[1]*60, ZOrder::Highlight)
-        else
-          @square_red.draw((highlight[0]+1)*60,highlight[1]*60, ZOrder::Highlight)
-        end
+    for highlight in @highlight
+      if highlight[2] == 0
+        @square_blue.draw((highlight[0])*60,highlight[1]*60, ZOrder::Highlight)
+      else
+        @square_red.draw((highlight[0])*60,highlight[1]*60, ZOrder::Highlight)
       end
     end
     @cursor.draw(self.mouse_x, self.mouse_y, ZOrder::Cursor)
