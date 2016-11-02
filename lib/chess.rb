@@ -12,7 +12,7 @@ class Regular < Gosu::Window
     @background_image = Gosu::Image.new('./media/space.png', :tileable => true)
     @square_blue = Gosu::Image.new('./media/60x60_blue.jpg')
     @square_red =Gosu::Image.new('./media/60x60_red.jpg')
-    @cursor = Gosu::Image.new(self, 'media/cursor-arrow.png')
+    @cursor = Gosu::Image.new(self, './media/cursor-arrow.png')
     @pieces = []
     @board = spawn("8x8")
     @highlight = []
@@ -37,24 +37,51 @@ class Regular < Gosu::Window
       if @selected == nil
         @pieces.each do |piece|
           if (mouse_x/60).to_i == piece.x_value && (mouse_y/60).to_i-1 == piece.y_value
-            @selected = piece
-            p piece
-            @highlight = []
-            @selected.moves.each do |move|
-              if @selected.x_value + move[0] <= 7 && @selected.x_value + move[0] >= 0 && @selected.y_value + move[1] <= 7 && @selected.y_value + move[1] >= 0
-                @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner]
+            if @turn%2 == piece.owner
+              @selected = piece
+              p piece
+              @highlight = []
+              @selected.moves.each do |move|
+                if @selected.x_value + move[0] <= 7 && @selected.x_value + move[0] >= 0 && @selected.y_value + move[1] <= 7 && @selected.y_value + move[1] >= 0
+                  # unless @selected.owner == @turn%2
+                    @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner]
+                  # end
+                end
+                #ARBETA HÄR ??
+                #dasdfasdfsadfsda
+                #afdssfasfsda
               end
-              #ARBETA HÄR ??
-              #dasdfasdfsadfsda
-              #afdssfasfsda
+            else
+              #wrong turn
             end
           end
         end
       else
         @highlight.each do |current|
-          #skriv röra, attacker etc.
+          if [(mouse_x/60).to_i,(mouse_y/60).to_i] == [current[0],current[1]]
+            @do = [true,current[0],(current[1]-1).to_i,0]
+            p @do
+            @pieces.each_with_index do |piece, i|
+              if [piece.x_value,piece.y_value] == [@do[1],@do[2]]
+                @do[3] = i
+              end
+            end
+          end
         end
       end
+    end
+
+    if Gosu::button_down?(Gosu::KbSpace) && @do[0] == true
+      if @do[3] == nil
+        @selected.warp(@do[1],@do[2])
+      else
+        @pieces.delete_at(@do[3])
+        @selected.warp(@do[1],@do[2])
+      end
+      @selected = nil
+      @highlight = []
+      @turn += 1
+      @do = [false,0,0,0]
     end
 
     if Gosu::button_down?(Gosu::MsRight) || Gosu::button_down?(Gosu::KbEscape) then
@@ -112,7 +139,8 @@ class Piece
   end
 
   def warp(x, y)
-    @x, @y = x, y
+    @x = x
+    @y = y
   end
 
   def score
