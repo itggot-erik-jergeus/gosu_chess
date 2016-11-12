@@ -4,6 +4,8 @@ require 'gosu'
 #   Background, Layout, Highlight, Piece, Cursor = *0..4
 # end
 
+# TODO Need to fix unit collision, i.e. a non-cavalry piece can't go through any pieces.
+
 class GameWindow < Gosu::Window
 
   def initialize
@@ -33,10 +35,10 @@ class GameWindow < Gosu::Window
     if size =="8x8"
       # Creating some pieces for both sides
       8.times do |i|
-        @pieces << Warrior.new(i,1,0,0)
-        @pieces << Warrior.new(i,0,0,0)
-        @pieces << Warrior.new(i,7,180,1)
-        @pieces << Warrior.new(i,6,180,1)
+        @pieces << General.new(i,1,0,0)
+        @pieces << General.new(i,0,0,0)
+        @pieces << Cavalry.new(i,7,180,1)
+        @pieces << Cavalry.new(i,6,180,1)
       end
     end
   end
@@ -198,6 +200,31 @@ class Warrior < Piece
     [[(-1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-3*(Math.cos(@angle*Math::PI/180))).to_i,0],[(1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(3*(Math.cos(@angle*Math::PI/180))).to_i,0],[0,(1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(2*(Math.cos(@angle*Math::PI/180))).to_i],[0,(3*(Math.cos(@angle*Math::PI/180))).to_i]]
   end
 end
+
+class Cavalry < Piece
+  # Returns the media file for the current subclass
+  def image
+    Gosu::Image.new("./media/horse-icon.png")
+  end
+
+  # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
+  def moves
+    [[(-2*(Math.cos(@angle*Math::PI/180))).to_i,-2],[(-3*(Math.cos(@angle*Math::PI/180))).to_i,-3],[(-4*(Math.cos(@angle*Math::PI/180))).to_i,-4],[(2*(Math.cos(@angle*Math::PI/180))).to_i,2],[(3*(Math.cos(@angle*Math::PI/180))).to_i,3],[(4*(Math.cos(@angle*Math::PI/180))).to_i,4],[-2,(2*(Math.cos(@angle*Math::PI/180))).to_i],[-3,(3*(Math.cos(@angle*Math::PI/180))).to_i],[-4,(4*(Math.cos(@angle*Math::PI/180))).to_i],[2,(-2*(Math.cos(@angle*Math::PI/180))).to_i], [3,(-3*(Math.cos(@angle*Math::PI/180))).to_i],[4,(-4*(Math.cos(@angle*Math::PI/180))).to_i]]
+  end
+end
+
+class General < Piece
+  # Returns the media file for the current subclass
+  def image
+    Gosu::Image.new("./media/general.png")
+  end
+
+  # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
+  def moves
+    [[(-1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(2*(Math.cos(@angle*Math::PI/180))).to_i,0],[0,(1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(2*(Math.cos(@angle*Math::PI/180))).to_i],[0,(-1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(-2*(Math.cos(@angle*Math::PI/180))).to_i]]
+  end
+end
+
 
 
 # class Star
