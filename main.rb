@@ -1,5 +1,5 @@
 require 'gosu'
-require_relative 'lib/chess'
+require_relative 'lib/menu'
 
-gw = Regular.new
+gw = MenuWindow.new
 gw.show
