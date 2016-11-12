@@ -36,7 +36,7 @@ class GameWindow < Gosu::Window
       # Creating some pieces for both sides
       8.times do |i|
         @pieces << General.new(i,1,0,0)
-        @pieces << General.new(i,0,0,0)
+        @pieces << Warrior.new(i,0,0,0)
         @pieces << Cavalry.new(i,7,180,1)
         @pieces << Cavalry.new(i,6,180,1)
       end
@@ -192,7 +192,7 @@ end
 class Warrior < Piece
   # Returns the media file for the current subclass
   def image
-    Gosu::Image.new("./media/falcon.png")
+    Gosu::Image.new("./media/sword.png")
   end
 
   # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
