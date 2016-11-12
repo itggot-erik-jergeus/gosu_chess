@@ -1,9 +1,6 @@
 require 'gosu'
 require_relative 'lib/menu'
+require_relative 'lib/chess'
 
-<<<<<<< HEAD
-gw = MenuWindow.new
-=======
-gw = GameWindow.new
->>>>>>> origin/master
-gw.show
+
+MenuWindow.new.show

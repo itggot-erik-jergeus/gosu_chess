@@ -1,27 +1,37 @@
 require 'gosu'
 
-module ZOrder
-  Background, Highlight, Piece, Cursor = *0..3
-end
+# module ZOrder
+#   Background, Layout, Highlight, Piece, Cursor = *0..4
+# end
 
-class Regular < Gosu::Window
+class GameWindow < Gosu::Window
 
   def initialize
     super 540, 540
     self.caption = "Chess"
+    # @background is a variable that contains the media file for the background used.
     @background_image = Gosu::Image.new('./media/space.png', :tileable => true)
+    # @square_blue is a variable that contains the media file for the even player's @highlight image
     @square_blue = Gosu::Image.new('./media/60x60_blue.jpg')
+    # @square_red is a variable that contains the media file for the odd player's @highlight image
     @square_red =Gosu::Image.new('./media/60x60_red.jpg')
+    # @cursor is a variable that cointains the media file for the cursor
     @cursor = Gosu::Image.new(self, './media/cursor-arrow.png')
+    # @pieces is an array that contains various Piece subclasses
     @pieces = []
+    # @board is a temporary variable that says the size of the board ATM
     @board = spawn("8x8")
+    # @selected is a variable that contains a Piece subclass of the targeted chess piece
+    @selected = nil
+    # @highlight is all your eligible moves for the @selected piece
     @highlight = []
-    @selected
+    # @turn is the current turn, starting at 0. Will most often be used with %2 to figure out whose turn it is
     @turn = 0
   end
 
   def spawn(size)
     if size =="8x8"
+      # Creating some pieces for both sides
       8.times do |i|
         @pieces << Warrior.new(i,1,0,0)
         @pieces << Warrior.new(i,0,0,0)
@@ -33,36 +43,46 @@ class Regular < Gosu::Window
 
   def update
     if Gosu::button_down?(Gosu::MsLeft) then
-      p "#{(mouse_x/60).to_i},#{(mouse_y/60).to_i-1}"
+      ### p "#{(mouse_x/60).to_i},#{(mouse_y/60).to_i-1}"
+      # This happens if you don't have a selected piece. The purpose is to select a piece
       if @selected == nil
+        # A loop to check which, if any, piece that will be selected. Would probably be better with an .any? method
         @pieces.each do |piece|
+          # Checks if the mouse coordinates equal that of one of the pieces. No "else" statement
           if (mouse_x/60).to_i == piece.x_value && (mouse_y/60).to_i-1 == piece.y_value
+            # Checks if the turn is equal to that of the piece that was clicked.
             if @turn%2 == piece.owner
+              # Sets the piece to @selected, since it is in the right mouse coordinates and the right turn
               @selected = piece
-              p piece
+              ### p @selected
               @highlight = []
-              @selected.moves.each do |move|
+              @selected.moves.each_with_index do |move,i|
+                # Checks if the moves for the @selceted piece are eligible
                 if @selected.x_value + move[0] <= 7 && @selected.x_value + move[0] >= 0 && @selected.y_value + move[1] <= 7 && @selected.y_value + move[1] >= 0
-                  # unless @selected.owner == @turn%2
+                  # Sets @highlight if the move location is not obstructed by a friendly piece
+                  unless @pieces.any? { |occupied| [occupied.x_value,occupied.y_value,occupied.owner] == [@selected.x_value+move[0],@selected.y_value+move[1],@selected.owner] }
+                    ### p ["sel", @selected.x_value+move[0],@selected.y_value+move[1],@selected.owner]
                     @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner]
-                  # end
+                  end
                 end
-                #ARBETA HÄR ??
-                #dasdfasdfsadfsda
-                #afdssfasfsda
               end
             else
+              # TODO do something if it is the wrong turn
               #wrong turn
             end
           end
         end
+      # This happens if you have a selected piece. The purpose is to move or attack a piece
       else
+        # A loop to see if you clicked an eligible spot (an @highlight).
         @highlight.each do |current|
           if [(mouse_x/60).to_i,(mouse_y/60).to_i] == [current[0],current[1]]
-            @do = [true,current[0],(current[1]-1).to_i,0]
-            p @do
+            # Sets an @do variable for the move that you will make, that contains the coordinates and possibly the index of the attacked piece.
+            @do = [true,current[0],(current[1]-1).to_i,nil]
             @pieces.each_with_index do |piece, i|
+              # Sees if the move is an attack or not
               if [piece.x_value,piece.y_value] == [@do[1],@do[2]]
+                # Sets the index of the attacked piece to @do[3]
                 @do[3] = i
               end
             end
@@ -71,22 +91,28 @@ class Regular < Gosu::Window
       end
     end
 
+    # Executes the @do-move when you press spacebar
     if Gosu::button_down?(Gosu::KbSpace) && @do[0] == true
-      if @do[3] == nil
-        @selected.warp(@do[1],@do[2])
-      else
+      # Deletes the piece that was in the position where you move, if the @do-move it's an attack.
+      if @do[3] != nil
         @pieces.delete_at(@do[3])
-        @selected.warp(@do[1],@do[2])
       end
+      # Puts the @selected piece where you wanted it to move
+      @selected.warp(@do[1],@do[2])
+      # Resets all temporary variables
       @selected = nil
       @highlight = []
-      @turn += 1
       @do = [false,0,0,0]
+      # Adds a turn
+      @turn += 1
     end
 
+    # Cancels the selection
     if Gosu::button_down?(Gosu::MsRight) || Gosu::button_down?(Gosu::KbEscape) then
+      # Resets all temporary variables
       @selected = nil
       @highlight = []
+      @do = [false,0,0,0]
     end
 
     # def button_down(id)
@@ -100,12 +126,15 @@ class Regular < Gosu::Window
     # if rand(100) < 4 and @stars.length < 25
     #   @stars << Star.new(@star_anim)
     # end
+
   end
 
   def draw
+    # Draws the piece via its own draw method
     for piece in @pieces
       piece.draw
     end
+    # Draws the @highlight squares and checks which colour to draw with the @highlight[2], which is the owner of the @selected piece
     for highlight in @highlight
       if highlight[2] == 0
         @square_blue.draw((highlight[0])*60,highlight[1]*60, ZOrder::Highlight)
@@ -113,6 +142,7 @@ class Regular < Gosu::Window
         @square_red.draw((highlight[0])*60,highlight[1]*60, ZOrder::Highlight)
       end
     end
+    # Draws cursor and background
     @cursor.draw(self.mouse_x, self.mouse_y, ZOrder::Cursor)
     @background_image.draw(0, 0, ZOrder::Background)
   end
@@ -126,6 +156,7 @@ class Piece
     @owner = owner
   end
 
+  # Contains a bundle of methods that makes it possible to call the owner, x_value and y_value
   def owner
     @owner
   end
@@ -138,15 +169,18 @@ class Piece
     @y
   end
 
+  # A method to switch places for the Piece
   def warp(x, y)
     @x = x
     @y = y
   end
 
-  def score
-    @score
-  end
+  # A method that might be used in the future, but isn't currently
+  # def score
+  #   @score
+  # end
 
+  # The .draw method for the Piece, that uses the .image method in all subclasses
   def draw
     self.image.draw_rot((@x+0.5)*60, (@y+1.5)*60, ZOrder::Piece, @angle)
   end
@@ -154,12 +188,14 @@ class Piece
 end
 
 class Warrior < Piece
+  # Returns the media file for the current subclass
   def image
-    @image = Gosu::Image.new("./media/falcon.png")
+    Gosu::Image.new("./media/falcon.png")
   end
 
+  # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
   def moves
-    [[-1*(Math.cos(@angle*Math::PI/180)),0],[-2*(Math.cos(@angle*Math::PI/180)),0],[-3*(Math.cos(@angle*Math::PI/180)),0],[1*(Math.cos(@angle*Math::PI/180)),0],[2*(Math.cos(@angle*Math::PI/180)),0],[3*(Math.cos(@angle*Math::PI/180)),0],[0,1*(Math.cos(@angle*Math::PI/180))],[0,2*(Math.cos(@angle*Math::PI/180))],[0,3*(Math.cos(@angle*Math::PI/180))]]
+    [[(-1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-3*(Math.cos(@angle*Math::PI/180))).to_i,0],[(1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(3*(Math.cos(@angle*Math::PI/180))).to_i,0],[0,(1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(2*(Math.cos(@angle*Math::PI/180))).to_i],[0,(3*(Math.cos(@angle*Math::PI/180))).to_i]]
   end
 end
 
