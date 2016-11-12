@@ -1,10 +1,10 @@
 require 'gosu'
 
-module ZOrder
-  Background, Highlight, Piece, Cursor = *0..3
-end
+# module ZOrder
+#   Background, Layout, Highlight, Piece, Cursor = *0..4
+# end
 
-class Regular < Gosu::Window
+class GameWindow < Gosu::Window
 
   def initialize
     super 540, 540
