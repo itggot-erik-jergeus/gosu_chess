@@ -61,8 +61,11 @@ class GameWindow < Gosu::Window
               @selected.moves.each_with_index do |move,i|
                 # Checks if the moves for the @selceted piece are eligible
                 if @selected.x_value + move[0] <= 7 && @selected.x_value + move[0] >= 0 && @selected.y_value + move[1] <= 7 && @selected.y_value + move[1] >= 0
+                  # TODO Set Object Collision
+                  if @selected.class != Cavalry
+                  end
                   # Sets @highlight if the move location is not obstructed by a friendly piece
-                  unless @pieces.any? { |occupied| [occupied.x_value,occupied.y_value,occupied.owner] == [@selected.x_value+move[0],@selected.y_value+move[1],@selected.owner] }
+                  unless @pieces.any? { |occupied| [occupied.x_value,occupied.y_value,occupied.owner] == [@selected.x_value+move[0],@selected.y_value+move[1],@selected.owner]}
                     ### p ["sel", @selected.x_value+move[0],@selected.y_value+move[1],@selected.owner]
                     @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner]
                   end
