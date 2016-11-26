@@ -4,7 +4,9 @@ require 'gosu'
 #   Background, Layout, Highlight, Piece, Cursor = *0..4
 # end
 
-# TODO Need to fix unit collision, i.e. a non-cavalry piece can't go through any pieces.
+# TODO Fix archer and paladin
+# TODO Fix Wrong turn window and code
+# TODO Fix Confirm attack window and add the code for implementing it
 
 class GameWindow < Gosu::Window
 
@@ -40,6 +42,7 @@ class GameWindow < Gosu::Window
         @pieces << Cavalry.new(i,7,180,1)
         @pieces << Cavalry.new(i,6,180,1)
       end
+      @pieces << Archer.new(4,4,180,1)
     end
   end
 
@@ -162,6 +165,10 @@ class GameWindow < Gosu::Window
         @square_red.draw((highlight[0])*60,highlight[1]*60, ZOrder::Highlight)
       end
     end
+    # Draw explanation window if it is the wrong turn
+
+    # Draw confirmation window if you press a piece
+
     # Draws cursor and background
     @cursor.draw(self.mouse_x, self.mouse_y, ZOrder::Cursor)
     @background_image.draw(0, 0, ZOrder::Background)
@@ -215,7 +222,7 @@ class Warrior < Piece
 
   # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
   def moves
-    [[[(-1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-3*(Math.cos(@angle*Math::PI/180))).to_i,0]],[[(1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(3*(Math.cos(@angle*Math::PI/180))).to_i,0]],[[0,(1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(2*(Math.cos(@angle*Math::PI/180))).to_i],[0,(3*(Math.cos(@angle*Math::PI/180))).to_i]]]
+    [[[-1*(Math.cos(@angle*Math::PI/180)),0],[-2*(Math.cos(@angle*Math::PI/180)),0],[-3*(Math.cos(@angle*Math::PI/180)),0]],[[1*(Math.cos(@angle*Math::PI/180)),0],[2*(Math.cos(@angle*Math::PI/180)),0],[3*(Math.cos(@angle*Math::PI/180)),0]],[[0,1*(Math.cos(@angle*Math::PI/180))],[0,2*(Math.cos(@angle*Math::PI/180))],[0,3*(Math.cos(@angle*Math::PI/180))]]]
   end
 end
 
@@ -227,7 +234,7 @@ class Cavalry < Piece
 
   # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
   def moves
-    [[[(-2*(Math.cos(@angle*Math::PI/180))).to_i,-2],[(-3*(Math.cos(@angle*Math::PI/180))).to_i,-3],[(-4*(Math.cos(@angle*Math::PI/180))).to_i,-4]],[[(2*(Math.cos(@angle*Math::PI/180))).to_i,2],[(3*(Math.cos(@angle*Math::PI/180))).to_i,3],[(4*(Math.cos(@angle*Math::PI/180))).to_i,4]],[[-2,(2*(Math.cos(@angle*Math::PI/180))).to_i],[-3,(3*(Math.cos(@angle*Math::PI/180))).to_i],[-4,(4*(Math.cos(@angle*Math::PI/180))).to_i]],[[2,(-2*(Math.cos(@angle*Math::PI/180))).to_i], [3,(-3*(Math.cos(@angle*Math::PI/180))).to_i],[4,(-4*(Math.cos(@angle*Math::PI/180))).to_i]]]
+    [[[-2*(Math.cos(@angle*Math::PI/180)),-2],[-3*(Math.cos(@angle*Math::PI/180)),-3],[-4*(Math.cos(@angle*Math::PI/180)),-4]],[[2*(Math.cos(@angle*Math::PI/180)),2],[3*(Math.cos(@angle*Math::PI/180)),3],[4*(Math.cos(@angle*Math::PI/180)),4]],[[-2,2*(Math.cos(@angle*Math::PI/180))],[-3,3*(Math.cos(@angle*Math::PI/180))],[-4,4*(Math.cos(@angle*Math::PI/180))]],[[2,-2*(Math.cos(@angle*Math::PI/180))], [3,-3*(Math.cos(@angle*Math::PI/180))],[4,-4*(Math.cos(@angle*Math::PI/180))]]]
   end
 end
 
@@ -239,7 +246,19 @@ class General < Piece
 
   # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
   def moves
-    [[[(-1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-2*(Math.cos(@angle*Math::PI/180))).to_i,0]],[[(1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(2*(Math.cos(@angle*Math::PI/180))).to_i,0]],[[0,(1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(2*(Math.cos(@angle*Math::PI/180))).to_i]],[[0,(-1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(-2*(Math.cos(@angle*Math::PI/180))).to_i]]]
+    [[[-1*(Math.cos(@angle*Math::PI/180)),0],[-2*(Math.cos(@angle*Math::PI/180)),0]],[[1*(Math.cos(@angle*Math::PI/180)),0],[2*(Math.cos(@angle*Math::PI/180)),0]],[[0,1*(Math.cos(@angle*Math::PI/180))],[0,2*(Math.cos(@angle*Math::PI/180))]],[[0,-1*(Math.cos(@angle*Math::PI/180))],[0,-2*(Math.cos(@angle*Math::PI/180))]]]
+  end
+end
+
+class Archer < Piece
+  # Returns the media file for the current subclass
+  def image
+    Gosu::Image.new("./media/falcon.png")
+  end
+
+  # Returns all moves for the current subclass. Also specifies if it is a only moving move(true), or a only attacking move (false). It also uses a Degree -> Radian conversion multiplier, because Gosu and ruby uses different mathematical systems
+  def moves
+    [[[-1*(Math.cos(@angle*Math::PI/180)),0,true]],[[1*(Math.cos(@angle*Math::PI/180)),0,true]],[[0,1*(Math.cos(@angle*Math::PI/180)),true]],[[0,-1*(Math.cos(@angle*Math::PI/180)),true]],[[-3*(Math.cos(@angle*Math::PI/180)),0,false]],[[3*(Math.cos(@angle*Math::PI/180)),0,false]],[[0,3*(Math.cos(@angle*Math::PI/180)),false]],[[0,-3*(Math.cos(@angle*Math::PI/180)),false]]]
   end
 end
 
