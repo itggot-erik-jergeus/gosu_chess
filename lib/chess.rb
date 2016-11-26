@@ -58,16 +58,34 @@ class GameWindow < Gosu::Window
               @selected = piece
               ### p @selected
               @highlight = []
-              @selected.moves.each_with_index do |move,i|
-                # Checks if the moves for the @selceted piece are eligible
-                if @selected.x_value + move[0] <= 7 && @selected.x_value + move[0] >= 0 && @selected.y_value + move[1] <= 7 && @selected.y_value + move[1] >= 0
-                  # Sets @highlight if the move location is not obstructed by a friendly piece
-                  unless @pieces.any? { |occupied| [occupied.x_value,occupied.y_value,occupied.owner] == [@selected.x_value+move[0],@selected.y_value+move[1],@selected.owner] }
-                    ### p ["sel", @selected.x_value+move[0],@selected.y_value+move[1],@selected.owner]
-                    @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner]
+              # Fix with the 3x2 arrays
+              @selected.moves.each do |line|
+                line.each_with_index do |move,i|
+                  # Checks if the moves for the @selceted piece are eligible
+                  if @selected.x_value + move[0] <= 7 && @selected.x_value + move[0] >= 0 && @selected.y_value + move[1] <= 7 && @selected.y_value + move[1] >= 0
+                    # Sets @highlight if the move location is not obstructed by a friendly piece
+                    if @pieces.any? { |occupied| [occupied.x_value,occupied.y_value,occupied.owner] == [@selected.x_value+move[0],@selected.y_value+move[1],@selected.owner] }
+                      # Makes sure that the line of moves are "broken" (to fix object collision) unless the selected type of the piece is cavalry
+                      unless @selected.class == Cavalry
+                        break
+                      end
+                      ### p ["sel", @selected.x_value+move[0],@selected.y_value+move[1],@selected.owner]
+                    else
+                      @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner]
+                    end
                   end
                 end
               end
+              # @selected.moves.each_with_index do |move,i|
+              #   # Checks if the moves for the @selceted piece are eligible
+              #   if @selected.x_value + move[0] <= 7 && @selected.x_value + move[0] >= 0 && @selected.y_value + move[1] <= 7 && @selected.y_value + move[1] >= 0
+              #     # Sets @highlight if the move location is not obstructed by a friendly piece
+              #     unless @pieces.any? { |occupied| [occupied.x_value,occupied.y_value,occupied.owner] == [@selected.x_value+move[0],@selected.y_value+move[1],@selected.owner] }
+              #       ### p ["sel", @selected.x_value+move[0],@selected.y_value+move[1],@selected.owner]
+              #       @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner]
+              #     end
+              #   end
+              # end
             else
               # TODO do something if it is the wrong turn
               #wrong turn
@@ -197,7 +215,7 @@ class Warrior < Piece
 
   # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
   def moves
-    [[(-1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-3*(Math.cos(@angle*Math::PI/180))).to_i,0],[(1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(3*(Math.cos(@angle*Math::PI/180))).to_i,0],[0,(1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(2*(Math.cos(@angle*Math::PI/180))).to_i],[0,(3*(Math.cos(@angle*Math::PI/180))).to_i]]
+    [[[(-1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-3*(Math.cos(@angle*Math::PI/180))).to_i,0]],[[(1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(3*(Math.cos(@angle*Math::PI/180))).to_i,0]],[[0,(1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(2*(Math.cos(@angle*Math::PI/180))).to_i],[0,(3*(Math.cos(@angle*Math::PI/180))).to_i]]]
   end
 end
 
@@ -209,7 +227,7 @@ class Cavalry < Piece
 
   # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
   def moves
-    [[(-2*(Math.cos(@angle*Math::PI/180))).to_i,-2],[(-3*(Math.cos(@angle*Math::PI/180))).to_i,-3],[(-4*(Math.cos(@angle*Math::PI/180))).to_i,-4],[(2*(Math.cos(@angle*Math::PI/180))).to_i,2],[(3*(Math.cos(@angle*Math::PI/180))).to_i,3],[(4*(Math.cos(@angle*Math::PI/180))).to_i,4],[-2,(2*(Math.cos(@angle*Math::PI/180))).to_i],[-3,(3*(Math.cos(@angle*Math::PI/180))).to_i],[-4,(4*(Math.cos(@angle*Math::PI/180))).to_i],[2,(-2*(Math.cos(@angle*Math::PI/180))).to_i], [3,(-3*(Math.cos(@angle*Math::PI/180))).to_i],[4,(-4*(Math.cos(@angle*Math::PI/180))).to_i]]
+    [[[(-2*(Math.cos(@angle*Math::PI/180))).to_i,-2],[(-3*(Math.cos(@angle*Math::PI/180))).to_i,-3],[(-4*(Math.cos(@angle*Math::PI/180))).to_i,-4]],[[(2*(Math.cos(@angle*Math::PI/180))).to_i,2],[(3*(Math.cos(@angle*Math::PI/180))).to_i,3],[(4*(Math.cos(@angle*Math::PI/180))).to_i,4]],[[-2,(2*(Math.cos(@angle*Math::PI/180))).to_i],[-3,(3*(Math.cos(@angle*Math::PI/180))).to_i],[-4,(4*(Math.cos(@angle*Math::PI/180))).to_i]],[[2,(-2*(Math.cos(@angle*Math::PI/180))).to_i], [3,(-3*(Math.cos(@angle*Math::PI/180))).to_i],[4,(-4*(Math.cos(@angle*Math::PI/180))).to_i]]]
   end
 end
 
@@ -221,7 +239,7 @@ class General < Piece
 
   # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
   def moves
-    [[(-1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-2*(Math.cos(@angle*Math::PI/180))).to_i,0],[(1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(2*(Math.cos(@angle*Math::PI/180))).to_i,0],[0,(1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(2*(Math.cos(@angle*Math::PI/180))).to_i],[0,(-1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(-2*(Math.cos(@angle*Math::PI/180))).to_i]]
+    [[[(-1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(-2*(Math.cos(@angle*Math::PI/180))).to_i,0]],[[(1*(Math.cos(@angle*Math::PI/180))).to_i,0],[(2*(Math.cos(@angle*Math::PI/180))).to_i,0]],[[0,(1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(2*(Math.cos(@angle*Math::PI/180))).to_i]],[[0,(-1*(Math.cos(@angle*Math::PI/180))).to_i],[0,(-2*(Math.cos(@angle*Math::PI/180))).to_i]]]
   end
 end
 
