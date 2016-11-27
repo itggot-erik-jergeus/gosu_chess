@@ -4,7 +4,8 @@ require 'gosu'
 #   Background, Layout, Highlight, Piece, Cursor = *0..4
 # end
 
-# TODO Fix archer and paladin
+# TODO Fix Paladin
+# TODO Fix Models for background, all pieces, cursor and highlight
 # TODO Fix Wrong turn window and code
 # TODO Fix Confirm attack window and add the code for implementing it
 
@@ -42,6 +43,7 @@ class GameWindow < Gosu::Window
         @pieces << Cavalry.new(i,7,180,1)
         @pieces << Cavalry.new(i,6,180,1)
       end
+      @pieces << Archer.new(3,3,0,0)
       @pieces << Archer.new(4,4,180,1)
     end
   end
@@ -63,7 +65,7 @@ class GameWindow < Gosu::Window
               @highlight = []
               # Fix with the 3x2 arrays
               @selected.moves.each do |line|
-                line.each_with_index do |move,i|
+                line.each do |move|
                   # Checks if the moves for the @selceted piece are eligible
                   if @selected.x_value + move[0] <= 7 && @selected.x_value + move[0] >= 0 && @selected.y_value + move[1] <= 7 && @selected.y_value + move[1] >= 0
                     # Sets @highlight if the move location is not obstructed by a friendly piece
@@ -73,8 +75,12 @@ class GameWindow < Gosu::Window
                         break
                       end
                       ### p ["sel", @selected.x_value+move[0],@selected.y_value+move[1],@selected.owner]
+                    # move[2] is to check if it's a move which isn't allowed to attack. The any? method doesn't contain the owner in that case since you aren't allowed to attack the opponent if move[2] == true
+                    elsif move[2] && @pieces.any? { |occupied| [occupied.x_value,occupied.y_value] == [@selected.x_value+move[0],@selected.y_value+move[1]] }
+                      break
                     else
-                      @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner]
+                      ### p [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner,move[2]]
+                      @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner,move[2]]
                     end
                   end
                 end
@@ -101,7 +107,7 @@ class GameWindow < Gosu::Window
         @highlight.each do |current|
           if [(mouse_x/60).to_i,(mouse_y/60).to_i] == [current[0],current[1]]
             # Sets an @do variable for the move that you will make, that contains the coordinates and possibly the index of the attacked piece.
-            @do = [true,current[0],(current[1]-1).to_i,nil]
+            @do = [true,current[0],(current[1]-1).to_i,nil,current[3]]
             @pieces.each_with_index do |piece, i|
               # Sees if the move is an attack or not
               if [piece.x_value,piece.y_value] == [@do[1],@do[2]]
@@ -120,8 +126,10 @@ class GameWindow < Gosu::Window
       if @do[3] != nil
         @pieces.delete_at(@do[3])
       end
-      # Puts the @selected piece where you wanted it to move
-      @selected.warp(@do[1],@do[2])
+      # Puts the @selected piece where you wanted it to move. The expression can't be simplified since 'nil != false'
+      if @do[4] != false
+        @selected.warp(@do[1],@do[2])
+      end
       # Resets all temporary variables
       @selected = nil
       @highlight = []
@@ -220,7 +228,7 @@ class Warrior < Piece
     Gosu::Image.new("./media/sword.png")
   end
 
-  # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
+  # Returns all moves for the current subclass. It also uses a multiplier Degree -> Radian conversion multiplier, because gosu and ruby uses different systems. This is only needed when the piece can't move symmetrically in X and Y, such as this case
   def moves
     [[[-1*(Math.cos(@angle*Math::PI/180)),0],[-2*(Math.cos(@angle*Math::PI/180)),0],[-3*(Math.cos(@angle*Math::PI/180)),0]],[[1*(Math.cos(@angle*Math::PI/180)),0],[2*(Math.cos(@angle*Math::PI/180)),0],[3*(Math.cos(@angle*Math::PI/180)),0]],[[0,1*(Math.cos(@angle*Math::PI/180))],[0,2*(Math.cos(@angle*Math::PI/180))],[0,3*(Math.cos(@angle*Math::PI/180))]]]
   end
@@ -232,9 +240,12 @@ class Cavalry < Piece
     Gosu::Image.new("./media/horse-icon.png")
   end
 
-  # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
+  # Returns all moves for the current subclass.
   def moves
-    [[[-2*(Math.cos(@angle*Math::PI/180)),-2],[-3*(Math.cos(@angle*Math::PI/180)),-3],[-4*(Math.cos(@angle*Math::PI/180)),-4]],[[2*(Math.cos(@angle*Math::PI/180)),2],[3*(Math.cos(@angle*Math::PI/180)),3],[4*(Math.cos(@angle*Math::PI/180)),4]],[[-2,2*(Math.cos(@angle*Math::PI/180))],[-3,3*(Math.cos(@angle*Math::PI/180))],[-4,4*(Math.cos(@angle*Math::PI/180))]],[[2,-2*(Math.cos(@angle*Math::PI/180))], [3,-3*(Math.cos(@angle*Math::PI/180))],[4,-4*(Math.cos(@angle*Math::PI/180))]]]
+    [[[-2,-2],[-3,-3],[-4,-4]],
+     [[2,2],[3,3],[4,4]],
+     [[-2,2],[-3,3],[-4,4]],
+     [[2,-2], [3,-3],[4,-4]]]
   end
 end
 
@@ -244,9 +255,12 @@ class General < Piece
     Gosu::Image.new("./media/general.png")
   end
 
-  # Returns all moves for the current subclass. It also uses a Degree -> Radian conversion multiplier, because gosu and ruby uses different systems
+  # Returns all moves for the current subclass.
   def moves
-    [[[-1*(Math.cos(@angle*Math::PI/180)),0],[-2*(Math.cos(@angle*Math::PI/180)),0]],[[1*(Math.cos(@angle*Math::PI/180)),0],[2*(Math.cos(@angle*Math::PI/180)),0]],[[0,1*(Math.cos(@angle*Math::PI/180))],[0,2*(Math.cos(@angle*Math::PI/180))]],[[0,-1*(Math.cos(@angle*Math::PI/180))],[0,-2*(Math.cos(@angle*Math::PI/180))]]]
+    [[[-1,0],[-2,0]],
+     [[1,0],[2,0]],
+     [[0,1],[0,2]],
+     [[0,-1],[0,-2]]]
   end
 end
 
@@ -256,9 +270,13 @@ class Archer < Piece
     Gosu::Image.new("./media/falcon.png")
   end
 
-  # Returns all moves for the current subclass. Also specifies if it is a only moving move(true), or a only attacking move (false). It also uses a Degree -> Radian conversion multiplier, because Gosu and ruby uses different mathematical systems
+  # Returns all moves for the current subclass. Also specifies if it is a only moving move(true), or a only attacking move (false).
   def moves
-    [[[-1*(Math.cos(@angle*Math::PI/180)),0,true]],[[1*(Math.cos(@angle*Math::PI/180)),0,true]],[[0,1*(Math.cos(@angle*Math::PI/180)),true]],[[0,-1*(Math.cos(@angle*Math::PI/180)),true]],[[-3*(Math.cos(@angle*Math::PI/180)),0,false]],[[3*(Math.cos(@angle*Math::PI/180)),0,false]],[[0,3*(Math.cos(@angle*Math::PI/180)),false]],[[0,-3*(Math.cos(@angle*Math::PI/180)),false]]]
+    [[[-1,0,true]],[[1,0,true]],[[0,1,true]],[[0,-1,true]],
+     [[-3,0,false]],[[3,0,false]],[[0,3,false]],[[0,-3,false]],
+     [[1,-3,false]],[[-1,-3,false]],[[1,3,false]],[[-1,3,false]],
+     [[3,-1,false]],[[-3,-1,false]],[[3,1,false]],[[-3,1,false]],
+     [[2,-2,false]],[[-2,-2,false]],[[2,2,false]],[[-2,2,false]]]
   end
 end
 
