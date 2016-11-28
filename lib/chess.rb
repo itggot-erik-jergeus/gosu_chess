@@ -4,8 +4,8 @@ require 'gosu'
 #   Background, Layout, Highlight, Piece, Cursor = *0..4
 # end
 
-# TODO Fix Paladin
-# TODO Fix Models for background, all pieces, cursor and highlight
+# TODO Fix Paladin, (shield)
+# TODO Fix Models for background, all pieces, cursor and highlight. Remember different colors on Move Only and Attack Only
 # TODO Fix Wrong turn window and code
 # TODO Fix Confirm attack window and add the code for implementing it
 
@@ -19,11 +19,13 @@ class GameWindow < Gosu::Window
     # @square_blue is a variable that contains the media file for the even player's @highlight image
     @square_blue = Gosu::Image.new('./media/60x60_blue.jpg')
     # @square_red is a variable that contains the media file for the odd player's @highlight image
-    @square_red =Gosu::Image.new('./media/60x60_red.jpg')
+    @square_red = Gosu::Image.new('./media/60x60_red.jpg')
     # @cursor is a variable that cointains the media file for the cursor
     @cursor = Gosu::Image.new(self, './media/cursor-arrow.png')
     # @pieces is an array that contains various Piece subclasses
     @pieces = []
+    # @shields contains
+    @shields = []
     # @board is a temporary variable that says the size of the board ATM
     @board = spawn("8x8")
     # @selected is a variable that contains a Piece subclass of the targeted chess piece
@@ -43,8 +45,8 @@ class GameWindow < Gosu::Window
         @pieces << Cavalry.new(i,7,180,1)
         @pieces << Cavalry.new(i,6,180,1)
       end
-      @pieces << Archer.new(3,3,0,0)
-      @pieces << Archer.new(4,4,180,1)
+      @pieces << Paladin.new(3,3,0,0)
+      @pieces << Paladin.new(4,4,180,1)
     end
   end
 
@@ -267,6 +269,7 @@ end
 class Archer < Piece
   # Returns the media file for the current subclass
   def image
+    ### Rename to archer.png when the model is finished
     Gosu::Image.new("./media/falcon.png")
   end
 
@@ -280,6 +283,20 @@ class Archer < Piece
   end
 end
 
+class Paladin < Piece
+  # Returns the media file for the current subclass
+  def image
+    ### Rename to paladin.png when the model is finished
+    Gosu::Image.new("./media/falcon.png")
+  end
+
+  # Returns all moves for the current subclass. Also specifies if it is a only moving move(true), or a only attacking move (false). It also uses a multiplier Degree -> Radian conversion multiplier, because gosu and ruby uses different systems. This is only needed when the piece can't move symmetrically in X and Y, such as this case
+  def moves
+    [[[-1*(Math.cos(@angle*Math::PI/180)),0,true]],
+     [[1*(Math.cos(@angle*Math::PI/180)),0,true]],
+     [[0,1*(Math.cos(@angle*Math::PI/180)),true]]]
+  end
+end
 
 
 # class Star
