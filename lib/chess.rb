@@ -5,6 +5,7 @@ require 'gosu'
 # end
 
 # TODO Fix Paladin, (shield)
+# TODO Fix Cavalry OCCUPY PALADIN SHIT FUCKING HELL MATE I FUCKING HATE MY LIFE
 # TODO Fix Models for background, all pieces, cursor and highlight. Remember different colors on Move Only and Attack Only
 # TODO Fix Wrong turn window and code
 # TODO Fix Confirm attack window and add the code for implementing it
@@ -15,7 +16,7 @@ class GameWindow < Gosu::Window
     super 540, 540
     self.caption = "Chess"
     # @background is a variable that contains the media file for the background used.
-    @background_image = Gosu::Image.new('./media/space.png', :tileable => true)
+    @background_image = Gosu::Image.new('./media/8x8.png', :tileable => true)
     # @square_blue is a variable that contains the media file for the even player's @highlight image
     @square_blue = Gosu::Image.new('./media/60x60_blue.jpg')
     # @square_red is a variable that contains the media file for the odd player's @highlight image
@@ -24,29 +25,68 @@ class GameWindow < Gosu::Window
     @cursor = Gosu::Image.new(self, './media/cursor-arrow.png')
     # @pieces is an array that contains various Piece subclasses
     @pieces = []
-    # @shields contains
+    # @shields is an array that contains all shields from Paladins. Formated as X,Y,Direction,Team
     @shields = []
-    # @board is a temporary variable that says the size of the board ATM
-    @board = spawn("8x8")
     # @selected is a variable that contains a Piece subclass of the targeted chess piece
     @selected = nil
     # @highlight is all your eligible moves for the @selected piece
     @highlight = []
     # @turn is the current turn, starting at 0. Will most often be used with %2 to figure out whose turn it is
     @turn = 0
+    # @board is a temporary variable that says the size of the board ATM
+    @board = spawn("8x8")
+  end
+
+  # Removes all shields and then adds three shields to all Paladins adjacent to it.
+  def shield
+    @shields = []
+    @pieces.each do |piece|
+      if piece.class == Paladin
+        piece.shield.each do |shield|
+          @shields << shield
+        end
+      end
+    end
   end
 
   def spawn(size)
     if size =="8x8"
       # Creating some pieces for both sides
-      8.times do |i|
-        @pieces << General.new(i,1,0,0)
-        @pieces << Warrior.new(i,0,0,0)
-        @pieces << Cavalry.new(i,7,180,1)
-        @pieces << Cavalry.new(i,6,180,1)
-      end
-      @pieces << Paladin.new(3,3,0,0)
-      @pieces << Paladin.new(4,4,180,1)
+      @pieces << General.new(4,0,180,1)
+      @pieces << General.new(3,0,180,1)
+      @pieces << General.new(4,7,0,0)
+      @pieces << General.new(3,7,0,0)
+      @pieces << Cavalry.new(2,7,180,1)
+      @pieces << Cavalry.new(5,7,180,1)
+      @pieces << Cavalry.new(2,0,0,0)
+      @pieces << Cavalry.new(5,0,0,0)
+      @pieces << Cavalry.new(0,7,180,1)
+      @pieces << Cavalry.new(7,7,180,1)
+      @pieces << Cavalry.new(0,0,0,0)
+      @pieces << Cavalry.new(7,0,0,0)
+      @pieces << Paladin.new(2,6,180,1)
+      @pieces << Paladin.new(5,6,180,1)
+      @pieces << Paladin.new(2,1,0,0)
+      @pieces << Paladin.new(5,1,0,0)
+      @pieces << Warrior.new(0,1,0,0)
+      @pieces << Warrior.new(1,1,0,0)
+      @pieces << Warrior.new(3,1,0,0)
+      @pieces << Warrior.new(4,1,0,0)
+      @pieces << Warrior.new(6,1,0,0)
+      @pieces << Warrior.new(7,1,0,0)
+      @pieces << Warrior.new(0,6,180,1)
+      @pieces << Warrior.new(1,6,180,1)
+      @pieces << Warrior.new(3,6,180,1)
+      @pieces << Warrior.new(4,6,180,1)
+      @pieces << Warrior.new(6,6,180,1)
+      @pieces << Warrior.new(7,6,180,1)
+      @pieces << Archer.new(1,0,0,0)
+      @pieces << Archer.new(6,0,0,0)
+      @pieces << Archer.new(1,7,180,1)
+      @pieces << Archer.new(6,7,180,1)
+
+
+      shield
     end
   end
 
@@ -80,6 +120,11 @@ class GameWindow < Gosu::Window
                     # move[2] is to check if it's a move which isn't allowed to attack. The any? method doesn't contain the owner in that case since you aren't allowed to attack the opponent if move[2] == true
                     elsif move[2] && @pieces.any? { |occupied| [occupied.x_value,occupied.y_value] == [@selected.x_value+move[0],@selected.y_value+move[1]] }
                       break
+                    elsif @shields.any? { |protected| [protected[0],protected[1],protected[2],protected[3]] == [(@selected.x_value+move[0]).to_i,(@selected.y_value+move[1]).to_i,(@selected.angle+180)%360,(@selected.owner+1)%2] }
+                      unless @selected.class == Cavalry
+                        break
+                      end
+                      @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner,move[2]]
                     else
                       ### p [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner,move[2]]
                       @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner,move[2]]
@@ -138,6 +183,7 @@ class GameWindow < Gosu::Window
       @do = [false,0,0,0]
       # Adds a turn
       @turn += 1
+      shield
     end
 
     # Cancels the selection
@@ -175,6 +221,9 @@ class GameWindow < Gosu::Window
         @square_red.draw((highlight[0])*60,highlight[1]*60, ZOrder::Highlight)
       end
     end
+    for shield in @shields
+      Gosu::Image.new('./media/shield.png').draw_rot((shield[0]+0.5)*60,(shield[1]+1.5)*60, ZOrder::Highlight,shield[2])
+    end
     # Draw explanation window if it is the wrong turn
 
     # Draw confirmation window if you press a piece
@@ -196,6 +245,10 @@ class Piece
   # Contains a bundle of methods that makes it possible to call the owner, x_value and y_value
   def owner
     @owner
+  end
+
+  def angle
+    @angle
   end
 
   def x_value
@@ -244,10 +297,10 @@ class Cavalry < Piece
 
   # Returns all moves for the current subclass.
   def moves
-    [[[-2,-2],[-3,-3],[-4,-4]],
-     [[2,2],[3,3],[4,4]],
-     [[-2,2],[-3,3],[-4,4]],
-     [[2,-2], [3,-3],[4,-4]]]
+    [[[-2,-2]],[[-3,-3]],[[-4,-4]],
+     [[2,2]],[[3,3]],[[4,4]],
+     [[-2,2]],[[-3,3]],[[-4,4]],
+     [[2,-2]],[[3,-3]],[[4,-4]]]
   end
 end
 
@@ -295,6 +348,14 @@ class Paladin < Piece
     [[[-1*(Math.cos(@angle*Math::PI/180)),0,true]],
      [[1*(Math.cos(@angle*Math::PI/180)),0,true]],
      [[0,1*(Math.cos(@angle*Math::PI/180)),true]]]
+  end
+
+  def shield
+    shields = []
+    shields << [self.x_value-1*Math.cos(self.angle*Math::PI/180).to_i,self.y_value-1*Math.sin(self.angle*Math::PI/180).to_i,self.angle,self.owner]
+    shields << [self.x_value,self.y_value,self.angle,self.owner]
+    shields << [self.x_value+1*Math.cos(self.angle*Math::PI/180).to_i,self.y_value+1*Math.sin(self.angle*Math::PI/180).to_i,self.angle,self.owner]
+    shields
   end
 end
 
