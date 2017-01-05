@@ -24,7 +24,7 @@ class MenuWindow < Gosu::Window
     end
 
     def check(x_l,x_r,y_t,y_b)
-      # Determines if the cursor is within the given area, made by the x and y coordinates
+      # Determines if the cursor is within the given area, made by the x and y coordinates, returns true if the cursor is within
       if mouse_x >= x_l && mouse_x <= x_r && mouse_y >= y_t && mouse_y <= y_b
         true
       end
@@ -90,7 +90,7 @@ class MenuWindow < Gosu::Window
     def y_bottom
       @y_bottom
     end
-
+    # func type does currently not serve any real purpose, will cut out at some point if we don't find an use
     def type
       @type
     end
