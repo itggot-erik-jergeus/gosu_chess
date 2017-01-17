@@ -4,11 +4,10 @@ require 'gosu'
 #   Background, Layout, Highlight, Piece, Cursor = *0..4
 # end
 
-# TODO Fix Paladin, (shield)
-# TODO Fix Cavalry OCCUPY PALADIN SHIT FUCKING HELL MATE I FUCKING HATE MY LIFE
-# TODO Fix Models for background, all pieces, cursor and highlight. Remember different colors on Move Only and Attack Only
+# TODO Fix Models for cursor and highlight. Remember different colors on Move Only and Attack Only
 # TODO Fix Wrong turn window and code
 # TODO Fix Confirm attack window and add the code for implementing it
+# TODO Fix Check Mate screen
 
 class GameWindow < Gosu::Window
 
@@ -37,7 +36,26 @@ class GameWindow < Gosu::Window
     @board = spawn("8x8")
   end
 
-  # Removes all shields and then adds three shields to all Paladins adjacent to it.
+  def check_mate
+    alive = []
+    @pieces.each do |piece|
+      # Checks how many general exists
+      if piece.type == general
+        # Says which generals are alive
+        alive << piece.owner
+      end
+    end
+    # Checks if both players have atleast 1 general alive
+    if alive.include?(0) && alive.include?(1)
+      false
+    # Outputs the player that's alive (this will only happen if 1 player is not alive)
+    else
+      # Should show end message
+      alive[0]
+    end
+  end
+
+  # Removes all shields and then adds three shields to all Paladins adjacent to it, by calling the method 'shield'
   def shield
     @shields = []
     @pieces.each do |piece|
@@ -52,10 +70,10 @@ class GameWindow < Gosu::Window
   def spawn(size)
     if size =="8x8"
       # Creating some pieces for both sides
-      @pieces << General.new(4,0,180,1)
-      @pieces << General.new(3,0,180,1)
-      @pieces << General.new(4,7,0,0)
-      @pieces << General.new(3,7,0,0)
+      @pieces << General.new(4,0,180,0)
+      @pieces << General.new(3,0,180,0)
+      @pieces << General.new(4,7,0,1)
+      @pieces << General.new(3,7,0,1)
       @pieces << Cavalry.new(2,7,180,1)
       @pieces << Cavalry.new(5,7,180,1)
       @pieces << Cavalry.new(2,0,0,0)
@@ -108,23 +126,35 @@ class GameWindow < Gosu::Window
               # Fix with the 3x2 arrays
               @selected.moves.each do |line|
                 line.each do |move|
+                  p move[0]
+                  p move[1]
+                  # p move[2]
+                  p move[3]
                   # Checks if the moves for the @selceted piece are eligible
                   if @selected.x_value + move[0] <= 7 && @selected.x_value + move[0] >= 0 && @selected.y_value + move[1] <= 7 && @selected.y_value + move[1] >= 0
                     # Sets @highlight if the move location is not obstructed by a friendly piece
                     if @pieces.any? { |occupied| [occupied.x_value,occupied.y_value,occupied.owner] == [@selected.x_value+move[0],@selected.y_value+move[1],@selected.owner] }
-                      # Makes sure that the line of moves are "broken" (to fix object collision) unless the selected type of the piece is cavalry
+                      # Makes sure that the line of moves are "broken" (to fix object collision) unless the selected type of the piece is cavalry,occupied.owner,@selected.owner
                       unless @selected.class == Cavalry
                         break
                       end
                       ### p ["sel", @selected.x_value+move[0],@selected.y_value+move[1],@selected.owner]
-                    # move[2] is to check if it's a move which isn't allowed to attack. The any? method doesn't contain the owner in that case since you aren't allowed to attack the opponent if move[2] == true
-                    elsif move[2] && @pieces.any? { |occupied| [occupied.x_value,occupied.y_value] == [@selected.x_value+move[0],@selected.y_value+move[1]] }
-                      break
-                    elsif @shields.any? { |protected| [protected[0],protected[1],protected[2],protected[3]] == [(@selected.x_value+move[0]).to_i,(@selected.y_value+move[1]).to_i,(@selected.angle+180)%360,(@selected.owner+1)%2] }
+                    # Checks if any shield have the same x and y value as the move, as well as checking to make sure it's a different owner and checking if the shield is facing the same way as the attack
+                    elsif @shields.any? { |protected| [protected[0],protected[1],protected[3],(protected[2]+180)%360] == [(@selected.x_value+move[0]).to_i,(@selected.y_value+move[1]).to_i,(@selected.owner+1)%2,(@selected.angle+move[3])%360] }
+                      # protected[2],,(@selected.angle+180)%360
                       unless @selected.class == Cavalry
                         break
                       end
                       @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner,move[2]]
+                    # move[2] is to check if it's a move which isn't allowed to attack. The any? method doesn't contain the owner in that case since you aren't allowed to attack the opponent if move[2] == true
+                    elsif move[2] && @pieces.any? { |occupied| [occupied.x_value,occupied.y_value] == [@selected.x_value+move[0],@selected.y_value+move[1]] }
+                      break
+                    # Makes sure that object collision also works for enemy units
+                    elsif @pieces.any? { |occupied| [occupied.x_value,occupied.y_value,(occupied.owner+1)%2] == [@selected.x_value+move[0],@selected.y_value+move[1],@selected.owner] }
+                      @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner,move[2]]
+                      unless @selected.class == Cavalry
+                        break
+                      end
                     else
                       ### p [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner,move[2]]
                       @highlight << [@selected.x_value+move[0],@selected.y_value+move[1]+1,@selected.owner,move[2]]
@@ -280,74 +310,102 @@ end
 class Warrior < Piece
   # Returns the media file for the current subclass
   def image
-    Gosu::Image.new("./media/sword.png")
+    if self.owner == 0
+      Gosu::Image.new('./media/warrior_blue.png')
+    else
+      Gosu::Image.new('./media/warrior_red.png')
+    end
   end
 
-  # Returns all moves for the current subclass. It also uses a multiplier Degree -> Radian conversion multiplier, because gosu and ruby uses different systems. This is only needed when the piece can't move symmetrically in X and Y, such as this case
+  # Returns all moves for the current subclass. It also uses a multiplier Degree -> Radian conversion multiplier, because gosu and ruby uses different systems. This is needed for non-symmetric pieces and for shield attacking
   def moves
-    [[[-1*(Math.cos(@angle*Math::PI/180)),0],[-2*(Math.cos(@angle*Math::PI/180)),0],[-3*(Math.cos(@angle*Math::PI/180)),0]],[[1*(Math.cos(@angle*Math::PI/180)),0],[2*(Math.cos(@angle*Math::PI/180)),0],[3*(Math.cos(@angle*Math::PI/180)),0]],[[0,1*(Math.cos(@angle*Math::PI/180))],[0,2*(Math.cos(@angle*Math::PI/180))],[0,3*(Math.cos(@angle*Math::PI/180))]]]
+    [[[-1*(Math.cos(@angle*Math::PI/180)).to_i,0,nil,90],[-2*(Math.cos(@angle*Math::PI/180)).to_i,0,nil,90],[-3*(Math.cos(@angle*Math::PI/180)).to_i,0,nil,90]],
+     [[1*(Math.cos(@angle*Math::PI/180)).to_i,0,nil,270],[2*(Math.cos(@angle*Math::PI/180)).to_i,0,nil,270],[3*(Math.cos(@angle*Math::PI/180)).to_i,0,nil,270]],
+     [[0,1*(Math.cos(@angle*Math::PI/180)).to_i,nil,0],[0,2*(Math.cos(@angle*Math::PI/180)).to_i,nil,0],[0,3*(Math.cos(@angle*Math::PI/180)).to_i,nil,0]]]
   end
 end
 
 class Cavalry < Piece
   # Returns the media file for the current subclass
   def image
-    Gosu::Image.new("./media/horse-icon.png")
+    if self.owner == 0
+      Gosu::Image.new('./media/knight_blue.png')
+    else
+      Gosu::Image.new('./media/knight_red.png')
+    end
   end
 
   # Returns all moves for the current subclass.
   def moves
-    [[[-2,-2]],[[-3,-3]],[[-4,-4]],
-     [[2,2]],[[3,3]],[[4,4]],
-     [[-2,2]],[[-3,3]],[[-4,4]],
-     [[2,-2]],[[3,-3]],[[4,-4]]]
+    [[[-2,-2,nil,135]],
+     [[-3,-3,nil,135]],
+     [[-4,-4,nil,135]],
+     [[2,2,nil,315]],
+     [[3,3,nil,315]],
+     [[4,4,nil,315]],
+     [[-2,2,nil,45]],
+     [[-3,3,nil,45]],
+     [[-4,4,nil,45]],
+     [[2,-2,nil,225]],
+     [[3,-3,nil,225]],
+     [[4,-4,nil,225]]]
   end
 end
 
 class General < Piece
   # Returns the media file for the current subclass
   def image
-    Gosu::Image.new("./media/general.png")
+    if self.owner == 0
+      Gosu::Image.new('./media/general_blue.png')
+    else
+      Gosu::Image.new('./media/general_red.png')
+    end
   end
 
   # Returns all moves for the current subclass.
   def moves
-    [[[-1,0],[-2,0]],
-     [[1,0],[2,0]],
-     [[0,1],[0,2]],
-     [[0,-1],[0,-2]]]
+    [[[-1*(Math.cos(@angle*Math::PI/180)).to_i,0,nil,90],[-2*(Math.cos(@angle*Math::PI/180)).to_i,0,nil,90]],
+     [[1*(Math.cos(@angle*Math::PI/180)).to_i,0,nil,270],[2*(Math.cos(@angle*Math::PI/180)).to_i,0,nil,270]],
+     [[0,1*(Math.cos(@angle*Math::PI/180)).to_i,nil,0],[0,2*(Math.cos(@angle*Math::PI/180)).to_i,nil,0]],
+     [[0,-1*(Math.cos(@angle*Math::PI/180)).to_i,nil,180],[0,-2*(Math.cos(@angle*Math::PI/180)).to_i,nil,180]]]
   end
 end
 
 class Archer < Piece
   # Returns the media file for the current subclass
   def image
-    ### Rename to archer.png when the model is finished
-    Gosu::Image.new("./media/falcon.png")
+    if self.owner == 0
+      Gosu::Image.new('./media/archer_blue.png')
+    else
+      Gosu::Image.new('./media/archer_red.png')
+    end
   end
 
   # Returns all moves for the current subclass. Also specifies if it is a only moving move(true), or a only attacking move (false).
   def moves
-    [[[-1,0,true]],[[1,0,true]],[[0,1,true]],[[0,-1,true]],
-     [[-3,0,false]],[[3,0,false]],[[0,3,false]],[[0,-3,false]],
-     [[1,-3,false]],[[-1,-3,false]],[[1,3,false]],[[-1,3,false]],
-     [[3,-1,false]],[[-3,-1,false]],[[3,1,false]],[[-3,1,false]],
-     [[2,-2,false]],[[-2,-2,false]],[[2,2,false]],[[-2,2,false]]]
+    [[[-1*(Math.cos(@angle*Math::PI/180)).to_i,0,true,90]],[[1*(Math.cos(@angle*Math::PI/180)).to_i,0,true,270]],[[0,1*(Math.cos(@angle*Math::PI/180)).to_i,true,0]],[[0,-1*(Math.cos(@angle*Math::PI/180)).to_i,true,180]],
+     [[-3*(Math.cos(@angle*Math::PI/180)).to_i,0,false,90]],[[3*(Math.cos(@angle*Math::PI/180)).to_i,0,false,270]],[[0,3*(Math.cos(@angle*Math::PI/180)).to_i,false,0]],[[0,-3*(Math.cos(@angle*Math::PI/180)).to_i,false,180]],
+     [[1*(Math.cos(@angle*Math::PI/180)).to_i,-3*(Math.cos(@angle*Math::PI/180)).to_i,false,180]],[[-1*(Math.cos(@angle*Math::PI/180)).to_i,-3*(Math.cos(@angle*Math::PI/180)).to_i,false,180]],[[1*(Math.cos(@angle*Math::PI/180)).to_i,3*(Math.cos(@angle*Math::PI/180)).to_i,false,0]],[[-1*(Math.cos(@angle*Math::PI/180)).to_i,3*(Math.cos(@angle*Math::PI/180)).to_i,false,0]],
+     [[3*(Math.cos(@angle*Math::PI/180)).to_i,-1*(Math.cos(@angle*Math::PI/180)).to_i,false,270]],[[-3*(Math.cos(@angle*Math::PI/180)).to_i,-1*(Math.cos(@angle*Math::PI/180)).to_i,false,90]],[[3*(Math.cos(@angle*Math::PI/180)).to_i,1*(Math.cos(@angle*Math::PI/180)).to_i,false,270]],[[-3*(Math.cos(@angle*Math::PI/180)).to_i,1*(Math.cos(@angle*Math::PI/180)).to_i,false,90]],
+     [[2*(Math.cos(@angle*Math::PI/180)).to_i,-2*(Math.cos(@angle*Math::PI/180)).to_i,false,225]],[[-2*(Math.cos(@angle*Math::PI/180)).to_i,-2*(Math.cos(@angle*Math::PI/180)).to_i,false,135]],[[2*(Math.cos(@angle*Math::PI/180)).to_i,2*(Math.cos(@angle*Math::PI/180)).to_i,false,315]],[[-2*(Math.cos(@angle*Math::PI/180)).to_i,2*(Math.cos(@angle*Math::PI/180)).to_i,false,45]]]
   end
 end
 
 class Paladin < Piece
   # Returns the media file for the current subclass
   def image
-    ### Rename to paladin.png when the model is finished
-    Gosu::Image.new("./media/falcon.png")
+    if self.owner == 0
+      Gosu::Image.new('./media/paladin_blue.png')
+    else
+      Gosu::Image.new('./media/paladin_red.png')
+    end
   end
 
   # Returns all moves for the current subclass. Also specifies if it is a only moving move(true), or a only attacking move (false). It also uses a multiplier Degree -> Radian conversion multiplier, because gosu and ruby uses different systems. This is only needed when the piece can't move symmetrically in X and Y, such as this case
   def moves
-    [[[-1*(Math.cos(@angle*Math::PI/180)),0,true]],
-     [[1*(Math.cos(@angle*Math::PI/180)),0,true]],
-     [[0,1*(Math.cos(@angle*Math::PI/180)),true]]]
+    [[[-1*(Math.cos(@angle*Math::PI/180)).to_i,0,true,90]],
+     [[1*(Math.cos(@angle*Math::PI/180)).to_i,0,true,270]],
+     [[0,1*(Math.cos(@angle*Math::PI/180)).to_i,true,0]]]
   end
 
   def shield
