@@ -19,6 +19,7 @@ class MenuWindow < Gosu::Window
       @quit = Button.new(250,295,349,376,"quit")
       @back = Button.new(40,98,473,501,"back")
       @pieces = Button.new(432,503,471,498,"pieces")
+      @tomenu = Button.new(244,303,475,503,"menu")
       # Variable that tracks which instance you currently are in, serves to activate certain buttons
       @instance = "Menu"
     end
@@ -53,6 +54,25 @@ class MenuWindow < Gosu::Window
           # Sets @instance to "Pieces" and changes the background to pieces_background
           @instance = "Pieces"
           @background_image = Gosu::Image.new('./media/pieces_background.png', :tileable => true)
+        elsif check(@back.x_left,@back.x_right,@back.y_top,@back.y_bottom) && @instance == "Pieces"
+          # Sets @instace to "Menu" and changes the background to menu_background
+          @instance  = "Menu"
+          @background_image = Gosu::Image.new('./media/menu_background.png', :tileable => true)
+        elsif check(@pieces.x_left,@pieces.x_right,@pieces.y_top,@pieces.y_bottom) && @instance == "Pieces"
+          @instance = "Pieces2"
+          @background_image = Gosu::Image.new('./media/pieces2_background.png', :tileable => true)
+        elsif check(@tomenu.x_left,@tomenu.x_right,@tomenu.y_top,@tomenu.y_bottom) && @instance == "Pieces"
+          @instance = "Rules"
+          @background_image = Gosu::Image.new('./media/rules_background.png', :tileable => true)
+        elsif check(@pieces.x_left,@pieces.x_right,@pieces.y_top,@pieces.y_bottom) && @instance == "Pieces2"
+          @instance = "Pieces"
+          @background_image = Gosu::Image.new('./media/pieces_background.png', :tileable => true)
+        elsif check(@back.x_left,@back.x_right,@back.y_top,@back.y_bottom) && @instance == "Pieces2"
+          @instance = "Menu"
+          @background_image = Gosu::Image.new('./media/menu_background.png', :tileable => true)
+        elsif check(@tomenu.x_left,@tomenu.x_right,@tomenu.y_top,@tomenu.y_bottom) && @instance == "Pieces2"
+          @instance = "Rules"
+          @background_image = Gosu::Image.new('./media/rules_background.png', :tileable => true)
         end
       end
     end
