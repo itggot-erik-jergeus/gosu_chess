@@ -30,17 +30,21 @@ class GameWindow < Gosu::Window
     @selected = nil
     # @highlight is all your eligible moves for the @selected piece
     @highlight = []
+    # @do is the instance variable which stores your current move
+    @do = [false,0,0,0]
     # @turn is the current turn, starting at 0. Will most often be used with %2 to figure out whose turn it is
     @turn = 0
     # @board is a temporary variable that says the size of the board ATM
     @board = spawn("8x8")
+    # Says who won
+    @winner = nil
   end
 
   def check_mate
     alive = []
     @pieces.each do |piece|
       # Checks how many general exists
-      if piece.type == general
+      if piece.class == General
         # Says which generals are alive
         alive << piece.owner
       end
@@ -51,7 +55,7 @@ class GameWindow < Gosu::Window
     # Outputs the player that's alive (this will only happen if 1 player is not alive)
     else
       # Should show end message
-      alive[0]
+      @winner = alive[0]
     end
   end
 
@@ -126,10 +130,10 @@ class GameWindow < Gosu::Window
               # Fix with the 3x2 arrays
               @selected.moves.each do |line|
                 line.each do |move|
-                  p move[0]
-                  p move[1]
-                  # p move[2]
-                  p move[3]
+                  # p move[0]
+                  # p move[1]
+                  # # p move[2]
+                  # p move[3]
                   # Checks if the moves for the @selceted piece are eligible
                   if @selected.x_value + move[0] <= 7 && @selected.x_value + move[0] >= 0 && @selected.y_value + move[1] <= 7 && @selected.y_value + move[1] >= 0
                     # Sets @highlight if the move location is not obstructed by a friendly piece
@@ -214,6 +218,7 @@ class GameWindow < Gosu::Window
       # Adds a turn
       @turn += 1
       shield
+      check_mate
     end
 
     # Cancels the selection
@@ -255,9 +260,21 @@ class GameWindow < Gosu::Window
       Gosu::Image.new('./media/shield.png').draw_rot((shield[0]+0.5)*60,(shield[1]+1.5)*60, ZOrder::Highlight,shield[2])
     end
     # Draw explanation window if it is the wrong turn
-
+    if @winner
+      if @winner == 0
+        Gosu::Image.new('./media/winning-blue.png').draw(120,120,ZOrder::Cursor)
+      else
+        Gosu::Image.new('./media/winning-red.png').draw(120,120,ZOrder::Cursor)
+      end
+    end
     # Draw confirmation window if you press a piece
-
+    if @do[0] != false
+      if @do[2] < 3
+        Gosu::Image.new('./media/confirmation.png').draw(360,420,ZOrder::Cursor)
+      else
+        Gosu::Image.new('./media/confirmation.png').draw(0,0,ZOrder::Cursor)
+      end
+    end
     # Draws cursor and background
     @cursor.draw(self.mouse_x, self.mouse_y, ZOrder::Cursor)
     @background_image.draw(0, 0, ZOrder::Background)
