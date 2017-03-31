@@ -13,7 +13,7 @@ class GameWindow < Gosu::Window
 
   def initialize
     super 540, 540
-    self.caption = "Chess"
+    self.caption = "All men must die"
     # @background is a variable that contains the media file for the background used.
     @background_image = Gosu::Image.new('./media/8x8.png', :tileable => true)
     # @square_blue is a variable that contains the media file for the even player's @highlight image
