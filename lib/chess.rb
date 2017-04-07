@@ -4,11 +4,6 @@ require 'gosu'
 #   Background, Layout, Highlight, Piece, Cursor = *0..4
 # end
 
-# TODO Fix Models for cursor and highlight. Remember different colors on Move Only and Attack Only
-# TODO Fix Wrong turn window and code
-# TODO Fix Confirm attack window and add the code for implementing it
-# TODO Fix Check Mate screen
-
 class GameWindow < Gosu::Window
 
   def initialize
@@ -176,9 +171,6 @@ class GameWindow < Gosu::Window
               #     end
               #   end
               # end
-            else
-              # TODO do something if it is the wrong turn
-              #wrong turn
             end
           end
         end
